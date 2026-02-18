@@ -1,0 +1,97 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+    paths:
+      - 'GNSSLogger/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'GNSSLogger/**'
+  # Run manually from the Actions tab
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ./GNSSLogger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # Inject the Maps API key from a repo secret.
+      # If the secret is not set, the key is left empty and the Maps tab
+      # will not work, but the APK will still build successfully.
+      - name: Write Maps API key to local.properties
+        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > local.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      # The release build has no signing config so it produces an unsigned APK.
+      # You can install it via adb, or add a signing config / use a separate
+      # signing step if you need a store-ready APK.
+      - name: Build release APK (unsigned)
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GNSSLogger-debug
+          path: GNSSLogger/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Upload release APK (unsigned)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GNSSLogger-release-unsigned
+          path: GNSSLogger/app/build/outputs/apk/release/*.apk
+          retention-days: 14
+
+  # Creates a GitHub Release and attaches both APKs when you push a v* tag,
+  # e.g.:  git tag v1.0.0 && git push origin v1.0.0
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: GNSSLogger-debug
+          path: apks/debug
+
+      - name: Download release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: GNSSLogger-release-unsigned
+          path: apks/release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apks/**/*.apk
+          generate_release_notes: true
