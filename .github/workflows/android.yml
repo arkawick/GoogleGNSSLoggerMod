@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Write Maps API key to local.properties
-        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > local.properties
+        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY || 'GoogleMapsApiKey' }}" > local.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
