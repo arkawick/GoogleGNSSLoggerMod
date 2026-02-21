@@ -5,13 +5,8 @@ on:
     branches: [ main ]
     tags:
       - 'v*'
-    paths:
-      - 'GNSSLogger/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'GNSSLogger/**'
-  # Run manually from the Actions tab
   workflow_dispatch:
 
 defaults:
@@ -26,16 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      # Inject the Maps API key from a repo secret.
-      # If the secret is not set, the key is left empty and the Maps tab
-      # will not work, but the APK will still build successfully.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Write Maps API key to local.properties
         run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > local.properties
 
@@ -48,9 +42,6 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      # The release build has no signing config so it produces an unsigned APK.
-      # You can install it via adb, or add a signing config / use a separate
-      # signing step if you need a store-ready APK.
       - name: Build release APK (unsigned)
         run: ./gradlew assembleRelease --stacktrace
 
