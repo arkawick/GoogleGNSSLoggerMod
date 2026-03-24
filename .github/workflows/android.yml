@@ -62,14 +62,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GNSSLogger-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: GNSSLogger/app/build/outputs/apk/debug/*.apk
           retention-days: 14
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: GNSSLogger-release
-          path: app/build/outputs/apk/release/*.apk
+          path: GNSSLogger/app/build/outputs/apk/release/*.apk
           retention-days: 14
 
   # Creates a GitHub Release and attaches both APKs when you push a v* tag,
