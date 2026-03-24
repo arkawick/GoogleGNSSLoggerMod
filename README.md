@@ -114,9 +114,60 @@ Version 2.0.0.0 of the GnssLogger is enhanced with the following features:
 This source code is supplied as an Android Studio project that can be built and run
 with [Android Studio](https://developer.android.com/studio/index.html).
 
-The APK is also provided for convenience.
-
 For information about the data logged to files see [LOGGING_FORMAT.md](LOGGING_FORMAT.md).
+
+## Building
+
+Open the `GNSSLogger` directory in Android Studio and run **Build > Make Project**, or build from the command line:
+
+```bash
+cd GNSSLogger
+./gradlew assembleDebug
+```
+
+### Maps API Key
+
+A Google Maps API key is required for the Map tab. Add it to `GNSSLogger/local.properties`:
+
+```
+MAPS_API_KEY=YOUR_API_KEY
+```
+
+## CI / GitHub Actions
+
+Every push to `main` and every pull request triggers a build via `.github/workflows/android.yml` that:
+- Runs unit tests
+- Builds a debug APK (always signed with the debug key)
+- Builds a release APK (signed if keystore secrets are configured, unsigned otherwise)
+- Uploads both APKs as build artifacts (retained 14 days)
+
+Pushing a `v*` tag (e.g. `v1.0.0`) additionally creates a GitHub Release and attaches both APKs.
+
+### Configuring release signing
+
+1. Generate a keystore in Android Studio via **Build > Generate Signed Bundle / APK > Create new...**
+
+2. Convert the keystore to base64:
+
+    ```bash
+    # Linux / macOS
+    base64 -w 0 your-keystore.jks
+
+    # Windows PowerShell
+    [Convert]::ToBase64String([IO.File]::ReadAllBytes("your-keystore.jks"))
+    ```
+
+3. Add the following secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
+
+    | Secret | Value |
+    |---|---|
+    | `KEYSTORE_BASE64` | base64-encoded keystore file |
+    | `STORE_PASSWORD` | keystore password |
+    | `KEY_ALIAS` | key alias |
+    | `KEY_PASSWORD` | key password |
+    | `MAPS_API_KEY` | Google Maps API key (optional) |
+
+    If `KEYSTORE_BASE64` is not set, the release APK is built unsigned and the build still succeeds.
 
 # Pseudorange Library
 

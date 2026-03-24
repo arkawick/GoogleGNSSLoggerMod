@@ -42,8 +42,17 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Build release APK (unsigned)
+      - name: Decode keystore
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Build release APK
         run: ./gradlew assembleRelease --stacktrace
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_BASE64 != '' && 'keystore.jks' || '' }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -52,10 +61,10 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
 
-      - name: Upload release APK (unsigned)
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: GNSSLogger-release-unsigned
+          name: GNSSLogger-release
           path: app/build/outputs/apk/release/*.apk
           retention-days: 14
 
@@ -78,7 +87,7 @@ jobs:
       - name: Download release APK
         uses: actions/download-artifact@v4
         with:
-          name: GNSSLogger-release-unsigned
+          name: GNSSLogger-release
           path: apks/release
 
       - name: Create GitHub Release
